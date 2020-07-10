@@ -23,17 +23,25 @@ public class HelloHandler extends AzureSpringBootRequestHandler<User, Greeting> 
 
         context.getLogger().info("Greeting user name: " + request.getBody().get().getName());
         
-        Map<String,String> headers = request.getHeaders();
-        String authHeader = headers.get("authorization");
-        DecodedJWT jwt = JWT.decode(authHeader.replaceFirst("Bearer ", ""));
-        Map<String,Claim> claims = jwt.getClaims();
+        boolean authorized = checkAuthorization(request);
 
-        // check claims for authorization
+        context.getLogger().info("Authorized: " + authorized);
 
         return request
                 .createResponseBuilder(HttpStatus.OK)
                 .body(handleRequest(request.getBody().get(), context))
                 .header("Content-Type", "application/json")
                 .build();
+    }
+
+    private boolean checkAuthorization(HttpRequestMessage request){
+        Map<String,String> headers = request.getHeaders();
+        String authHeader = headers.get("authorization");
+        DecodedJWT jwt = JWT.decode(authHeader.replaceFirst("Bearer ", ""));
+        Map<String,Claim> claims = jwt.getClaims();
+
+        // check claims for authorization
+        boolean authorized = claims.containsKey("aud");
+        return authorized;
     }
 }
